@@ -1,7 +1,7 @@
 from minigrid.core.world_object import WorldObj
 from minigrid.minigrid_env import MiniGridEnv
 from minigrid.utils.rendering import fill_coords, point_in_circle
-from minigrid.core.constants import COLORS
+from minigrid.core.constants import COLORS, COLOR_TO_IDX
 
 class Button(WorldObj):
     """
@@ -21,5 +21,8 @@ class Button(WorldObj):
 
         return True
     
+    def encode(self):
+        return (11, COLOR_TO_IDX[self.color], 0)
+
     def render(self, img):
         fill_coords(img, point_in_circle(0.5, 0.5, 0.31), COLORS[self.color])

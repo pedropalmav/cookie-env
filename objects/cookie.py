@@ -1,6 +1,6 @@
 from minigrid.core.world_object import WorldObj
 from minigrid.utils.rendering import fill_coords, point_in_circle
-from minigrid.core.constants import COLORS
+from minigrid.core.constants import COLORS, COLOR_TO_IDX
 import numpy as np
 import pygame
 import os
@@ -40,6 +40,9 @@ class Cookie(WorldObj):
 
     def can_overlap(self):
         return True
+    
+    def encode(self):
+        return (12, COLOR_TO_IDX[self.color], 0)
 
     def render(self, img):
         if Cookie._cached_image is not None:
