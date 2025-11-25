@@ -1,14 +1,21 @@
-import random
 import pygame
 import numpy as np
 import utils.spawner as spawner
-from minigrid.core.constants import COLOR_NAMES
+from gymnasium import spaces
 from minigrid.core.grid import Grid
 from minigrid.core.mission import MissionSpace
-from minigrid.core.world_object import Wall, Ball
+from minigrid.core.world_object import Wall
 from minigrid.manual_control import ManualControl
 from minigrid.minigrid_env import MiniGridEnv
 from objects import Button, Cookie
+
+IDX_TO_ONEHOT = {
+    1: 0,
+    2: 1,
+    10: 2,
+    11: 3,
+    12: 4,
+}
 
 class CookieEnv(MiniGridEnv):
     def __init__(
@@ -20,8 +27,11 @@ class CookieEnv(MiniGridEnv):
         max_steps: int | None = None,
         reward: float = 1.0,
         cookie_spawner=spawner.random_corner,
+        onehot: bool = False,
         **kwargs,
     ):
+        
+        self.onehot = onehot
         self.reward = reward
         self.spawner = cookie_spawner
         self.agent_start_pos = agent_start_pos
@@ -43,6 +53,54 @@ class CookieEnv(MiniGridEnv):
             **kwargs,
         )
 
+        if self.onehot:
+            self._init_onehot_obs()
+
+    def _init_onehot_obs(self):
+        obs_shape = self.observation_space["image"].shape
+
+        new_image_space = spaces.Box(
+            low=0, high=1, shape=(obs_shape[0], obs_shape[1], 5), dtype="uint8"
+        )
+        self.observation_space = spaces.Dict(
+            {**self.observation_space.spaces, "image": new_image_space}
+        )
+
+    def gen_obs(self):
+        obs = super().gen_obs()
+        if self.onehot:
+            return self._get_onehot_obs(obs)
+        return obs
+
+    def _get_onehot_obs(self, obs):
+        objects_types = obs["image"][:, :, 0]
+        objects_types[self.agent_view_size // 2, self.agent_view_size - 1] = 10
+        onehot_image = np.zeros(
+            (obs["image"].shape[0], obs["image"].shape[1], 5), dtype="uint8"
+        )
+
+        for i in range(objects_types.shape[0]):
+            for j in range(objects_types.shape[1]):
+                obj_type = objects_types[i, j]
+                if obj_type in IDX_TO_ONEHOT:
+                    onehot_idx = IDX_TO_ONEHOT[obj_type]
+                    onehot_image[i, j, onehot_idx] = 1
+
+
+        obs["image"] = onehot_image
+
+        return obs
+
+    def step(self, action):
+        obs, reward, terminated, truncated, info = super().step(action)
+
+        obj = self.grid.get(*self.agent_pos)
+        if isinstance(obj, Cookie):
+            reward += self.reward
+            self.grid.set(*self.agent_pos, None)
+
+        return obs, reward, terminated, truncated, info
+    
     @staticmethod
     def _gen_mission():
         return "Get cookies"
@@ -88,16 +146,6 @@ class CookieEnv(MiniGridEnv):
         else:
             for i in range(abs(x1 - x2) + 1):
                 self.grid.set(x1 + i, y1, None)
-
-    def step(self, action):
-        obs, reward, terminated, truncated, info = super().step(action)
-
-        obj = self.grid.get(*self.agent_pos)
-        if isinstance(obj, Cookie):
-            reward += self.reward
-            self.grid.set(*self.agent_pos, None)
-
-        return obs, reward, terminated, truncated, info
     
     def place_cookie(self):
         self.remove_cookie()
@@ -140,7 +188,7 @@ class CookieEnv(MiniGridEnv):
 
     
 if __name__ == "__main__":
-    env = CookieEnv(render_mode="human", screen_size=2048)
+    env = CookieEnv(render_mode="human", screen_size=2048, onehot=True)
 
     manual_control = ManualControl(env, seed=42)
     manual_control.start()
