@@ -1,13 +1,13 @@
 import pygame
 import numpy as np
-import utils.spawner as spawner
+from .utils import spawner
 from gymnasium import spaces
 from minigrid.core.grid import Grid
 from minigrid.core.mission import MissionSpace
 from minigrid.core.world_object import Wall
 from minigrid.manual_control import ManualControl
 from minigrid.minigrid_env import MiniGridEnv
-from objects import Button, Cookie
+from .objects import Button, Cookie
 
 IDX_TO_ONEHOT = {
     1: 0,
