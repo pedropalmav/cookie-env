@@ -17,6 +17,7 @@ IDX_TO_ONEHOT = {
     12: 4,
 }
 
+
 class CookieEnv(MiniGridEnv):
     def __init__(
         self,
@@ -24,13 +25,13 @@ class CookieEnv(MiniGridEnv):
         width: int = 29,
         agent_start_pos=(14, 14),
         agent_start_dir=0,
-        max_steps: int | None = None,
+        max_steps: int | None = 10_000,
         reward: float = 1.0,
         cookie_spawner=spawner.random_corner,
         onehot: bool = False,
         **kwargs,
     ):
-        
+
         self.onehot = onehot
         self.reward = reward
         self.spawner = cookie_spawner
@@ -86,7 +87,6 @@ class CookieEnv(MiniGridEnv):
                     onehot_idx = IDX_TO_ONEHOT[obj_type]
                     onehot_image[i, j, onehot_idx] = 1
 
-
         obs["image"] = onehot_image
 
         return obs
@@ -100,7 +100,7 @@ class CookieEnv(MiniGridEnv):
             self.grid.set(*self.agent_pos, None)
 
         return obs, reward, terminated, truncated, info
-    
+
     @staticmethod
     def _gen_mission():
         return "Get cookies"
@@ -146,7 +146,7 @@ class CookieEnv(MiniGridEnv):
         else:
             for i in range(abs(x1 - x2) + 1):
                 self.grid.set(x1 + i, y1, None)
-    
+
     def place_cookie(self):
         self.remove_cookie()
         pos = self.spawner()
@@ -174,7 +174,7 @@ class CookieEnv(MiniGridEnv):
             if self.clock is None:
                 self.clock = pygame.time.Clock()
             surf = pygame.surfarray.make_surface(img)
-            
+
             window_size = self.window.get_size()
             surf = pygame.transform.scale(surf, window_size)
 
@@ -186,7 +186,7 @@ class CookieEnv(MiniGridEnv):
         elif self.render_mode == "rgb_array":
             return img
 
-    
+
 if __name__ == "__main__":
     env = CookieEnv(render_mode="human", screen_size=2048, onehot=True)
 
