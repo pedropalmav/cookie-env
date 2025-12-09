@@ -13,5 +13,5 @@
 
 # To Do
 
-- [] Create a renderer class
-- [] Create a grid generator class
+- [ ] Create a renderer class
+- [ ] Create a grid generator class
