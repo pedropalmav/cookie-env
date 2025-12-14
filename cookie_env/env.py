@@ -188,7 +188,11 @@ class CookieEnv(MiniGridEnv):
 
 
 if __name__ == "__main__":
-    env = CookieEnv(render_mode="human", screen_size=2048, onehot=True)
+    env = CookieEnv(
+        render_mode="human",
+        screen_size=2048,
+        onehot=True,
+    )
 
     manual_control = ManualControl(env, seed=42)
     manual_control.start()
