@@ -29,6 +29,7 @@ class CookieEnv(MiniGridEnv):
         reward: float = 1.0,
         cookie_spawner=spawner.random_corner,
         onehot: bool = False,
+        respawn: bool = True,
         **kwargs,
     ):
 
@@ -38,6 +39,7 @@ class CookieEnv(MiniGridEnv):
         self.agent_start_pos = agent_start_pos
         self.agent_start_dir = agent_start_dir
         self.cookie = Cookie()
+        self.respawn = respawn
 
         mission_space = MissionSpace(mission_func=self._gen_mission)
 
@@ -118,7 +120,7 @@ class CookieEnv(MiniGridEnv):
         self._generate_hallway(3, 14, 25, 14)
         self._generate_hallway(14, 3, 14, 14)
 
-        self.put_obj(Button("blue", self.place_cookie), 14, 3)
+        self.put_obj(Button("blue", self.spawn_cookie), 14, 3)
 
         if self.agent_start_pos is not None:
             self.agent_pos = self.agent_start_pos
@@ -147,14 +149,23 @@ class CookieEnv(MiniGridEnv):
             for i in range(abs(x1 - x2) + 1):
                 self.grid.set(x1 + i, y1, None)
 
-    def place_cookie(self):
-        self.remove_cookie()
-        pos = self.spawner()
-        self.put_obj(self.cookie, *pos)
+    def spawn_cookie(self):
+        if self.respawn:
+            self._respawn_cookie()
+        elif self.cookie.cur_pos is None:
+            self._place_cookie_on_grid()
 
-    def remove_cookie(self):
+    def _respawn_cookie(self):
+        self._remove_cookie()
+        self._place_cookie_on_grid()
+
+    def _remove_cookie(self):
         if self.cookie.cur_pos is not None:
             self.grid.set(*self.cookie.cur_pos, None)
+
+    def _place_cookie_on_grid(self):
+        pos = self.spawner()
+        self.put_obj(self.cookie, *pos)
 
     def render(self):
         # TODO: Create renderer class
@@ -192,6 +203,7 @@ if __name__ == "__main__":
         render_mode="human",
         screen_size=2048,
         onehot=True,
+        respawn=False,
     )
 
     manual_control = ManualControl(env, seed=42)
