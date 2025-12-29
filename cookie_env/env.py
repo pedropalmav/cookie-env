@@ -99,7 +99,7 @@ class CookieEnv(MiniGridEnv):
         obj = self.grid.get(*self.agent_pos)
         if isinstance(obj, Cookie):
             reward += self.reward
-            self.grid.set(*self.agent_pos, None)
+            self._remove_cookie()
 
         return obs, reward, terminated, truncated, info
 
@@ -162,6 +162,7 @@ class CookieEnv(MiniGridEnv):
     def _remove_cookie(self):
         if self.cookie.cur_pos is not None:
             self.grid.set(*self.cookie.cur_pos, None)
+            self.cookie.cur_pos = None
 
     def _place_cookie_on_grid(self):
         pos = self.spawner()
