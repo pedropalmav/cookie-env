@@ -103,6 +103,10 @@ class CookieEnv(MiniGridEnv):
 
         return obs, reward, terminated, truncated, info
 
+    def reset(self, *, seed=None, options=None):
+        self._remove_cookie()
+        super().reset(seed=seed, options=options)
+
     @staticmethod
     def _gen_mission():
         return "Get cookies"
