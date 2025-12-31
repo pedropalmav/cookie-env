@@ -105,7 +105,7 @@ class CookieEnv(MiniGridEnv):
 
     def reset(self, *, seed=None, options=None):
         self._remove_cookie()
-        super().reset(seed=seed, options=options)
+        return super().reset(seed=seed, options=options)
 
     @staticmethod
     def _gen_mission():
