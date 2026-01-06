@@ -9,3 +9,7 @@ def random_corner():
 
 def deterministic_corner(corner_id=0):
     return VALID_CORNERS[corner_id]
+
+
+def corridor_spawner():
+    return (1, 1)

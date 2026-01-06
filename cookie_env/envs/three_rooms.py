@@ -18,7 +18,7 @@ IDX_TO_ONEHOT = {
 }
 
 
-class CookieEnv(MiniGridEnv):
+class ThreeRooms(MiniGridEnv):
     def __init__(
         self,
         height: int = 18,
@@ -204,7 +204,7 @@ class CookieEnv(MiniGridEnv):
 
 
 if __name__ == "__main__":
-    env = CookieEnv(
+    env = ThreeRooms(
         render_mode="human",
         screen_size=2048,
         onehot=True,
