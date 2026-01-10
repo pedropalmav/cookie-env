@@ -28,3 +28,8 @@ register(
     id="Corridor-v0",
     entry_point="cookie_env.envs:Corridor",
 )
+
+register(
+    id="CornerEnv-v0",
+    entry_point="cookie_env.envs:CornerEnv",
+)
