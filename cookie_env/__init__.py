@@ -33,3 +33,8 @@ register(
     id="CornerEnv-v0",
     entry_point="cookie_env.envs:CornerEnv",
 )
+
+register(
+    id="TwoRooms-v0",
+    entry_point="cookie_env.envs:TwoRooms",
+)
