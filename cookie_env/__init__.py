@@ -38,3 +38,8 @@ register(
     id="TwoRooms-v0",
     entry_point="cookie_env.envs:TwoRooms",
 )
+
+register(
+    id="HEREnv-v0",
+    entry_point="cookie_env.envs:HEREnv-v0"
+)
