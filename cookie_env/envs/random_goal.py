@@ -80,11 +80,11 @@ class HEREnv(MiniGridEnv):
                 shape=(self._goal_dim,),
                 dtype=np.float32,
             ),
-            'achieved_goal': spaces.Box(
-                low=0, high=stoch_classes - 1,
-                shape=(stoch_rows,),
-                dtype=np.int32,
-            ),
+            # 'achieved_goal': spaces.Box(
+            #     low=0, high=stoch_classes - 1,
+            #     shape=(stoch_rows,),
+            #     dtype=np.int32,
+            # ),
         })
 
         if self.onehot:
@@ -159,7 +159,7 @@ class HEREnv(MiniGridEnv):
             obs = self._get_onehot_obs(obs)
         
         obs['goal']          = self._goal.copy()
-        obs['achieved_goal'] = self._achieved.copy()
+        # obs['achieved_goal'] = self._achieved.copy()
         return obs
 
     def reset(self, *, seed=None, options=None):
