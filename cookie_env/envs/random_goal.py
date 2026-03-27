@@ -13,9 +13,6 @@ class HEREnv(MiniGridEnv):
     - El goal es un double one-hot float32 en el espacio de observación:
         onehot(row_idx, stoch_rows) ⊕ onehot(class_val, stoch_classes)
       Se samplea uniformemente al inicio de cada episodio y se mantiene fijo.
-    - achieved_goal es un vector int32 de zeros (stoch_rows,) que sirve
-      de placeholder; run_train.py lo llena con el argmax del z estocástico
-      del agente a través de out['achieved_goal'].
     - Reward: siempre -1 por step. El reward 0 (goal alcanzado) lo asigna
       run_train.py en las transiciones HER relabeladas.
     - Terminación: solo por max_steps. La terminación por goal alcanzado
@@ -52,10 +49,12 @@ class HEREnv(MiniGridEnv):
         self.agent_start_dir  = agent_start_dir
         self.onehot           = onehot
 
-        # goal y achieved_goal se inicializan en reset()
+        # goal y se inicializan en reset()
         self._goal_dim   = stoch_rows + stoch_classes
         self._goal       = np.zeros(self._goal_dim,  dtype=np.float32)
-        self._achieved   = np.zeros(stoch_rows,      dtype=np.int32)
+
+        # 8 acciones: 0-6 (MiniGrid) + 7 (nada)
+        self.action_space = spaces.Discrete(8)
 
         mission_space = MissionSpace(mission_func=self._gen_mission)
 
@@ -72,7 +71,7 @@ class HEREnv(MiniGridEnv):
             **kwargs,
         )
 
-        # Ampliar observation_space con goal y achieved_goal
+        # Ampliar observation_space con goal
         self.observation_space = spaces.Dict({
             **self.observation_space.spaces,
             'goal': spaces.Box(
@@ -80,11 +79,6 @@ class HEREnv(MiniGridEnv):
                 shape=(self._goal_dim,),
                 dtype=np.float32,
             ),
-            # 'achieved_goal': spaces.Box(
-            #     low=0, high=stoch_classes - 1,
-            #     shape=(stoch_rows,),
-            #     dtype=np.int32,
-            # ),
         })
 
         if self.onehot:
@@ -157,9 +151,7 @@ class HEREnv(MiniGridEnv):
         obs = super().gen_obs()
         if self.onehot:
             obs = self._get_onehot_obs(obs)
-        
         obs['goal']          = self._goal.copy()
-        # obs['achieved_goal'] = self._achieved.copy()
         return obs
 
     def reset(self, *, seed=None, options=None):
@@ -171,6 +163,14 @@ class HEREnv(MiniGridEnv):
         return obs, info
 
     def step(self, action):
+        if action == 7:
+            self.step_count += 1
+            obs = self.gen_obs()
+            reward = -1.0
+            terminated = False
+            truncated = self.step_count >= self.max_steps
+            return obs, reward, terminated, truncated, {}
+        
         obs, reward, terminated, truncated, info = super().step(action)
         reward = -1.0
         terminated = False
