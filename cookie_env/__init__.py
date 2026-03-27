@@ -40,6 +40,6 @@ register(
 )
 
 register(
-    id="HEREnv-v0",
-    entry_point="cookie_env.envs:HEREnv-v0"
+    id="GoalEnv-v0",
+    entry_point="cookie_env.envs:GoalEnv-v0"
 )

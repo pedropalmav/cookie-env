@@ -5,16 +5,16 @@ from minigrid.core.mission import MissionSpace
 from minigrid.minigrid_env import MiniGridEnv
 
 
-class HEREnv(MiniGridEnv):
+class GoalEnv(MiniGridEnv):
     """
-    Entorno de navegación para HER (Hindsight Experience Replay).
+    Entorno de navegación para MultiGoal.
     ------
     - Grilla cuadrada size x size, sin objetos Goal visibles.
     - El goal es un double one-hot float32 en el espacio de observación:
         onehot(row_idx, stoch_rows) ⊕ onehot(class_val, stoch_classes)
       Se samplea uniformemente al inicio de cada episodio y se mantiene fijo.
     - Reward: siempre -1 por step. El reward 0 (goal alcanzado) lo asigna
-      run_train.py en las transiciones HER relabeladas.
+      driver.py al obtener el valor de z..
     - Terminación: solo por max_steps. La terminación por goal alcanzado
       la gestiona run_train.py truncando el buffer del episodio. 
 
@@ -164,6 +164,7 @@ class HEREnv(MiniGridEnv):
 
     def step(self, action):
         if action == 7:
+            print("accion:", action)
             self.step_count += 1
             obs = self.gen_obs()
             reward = -1.0
@@ -178,8 +179,24 @@ class HEREnv(MiniGridEnv):
 
 
 if __name__ == '__main__':
+    # python -m cookie_env.envs.random_goal
     from minigrid.manual_control import ManualControl
-    env = HEREnv(size=9, stoch_rows=4, stoch_classes=4,
+    import pygame
+    
+    env = GoalEnv(size=9, stoch_rows=32, stoch_classes=16,
                  render_mode='human', onehot=False)
-    manual = ManualControl(env, seed=42)
+
+    class HERManualControl(ManualControl):
+        def __init__(self, env, seed=None):
+            super().__init__(env, seed=seed)
+
+        def key_handler(self, event):
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SPACE:
+                    self.step(7)
+                    return
+                
+            super().key_handler(event)
+
+    manual = HERManualControl(env, seed=42)
     manual.start()
