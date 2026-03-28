@@ -5,19 +5,16 @@ from minigrid.core.mission import MissionSpace
 from minigrid.minigrid_env import MiniGridEnv
 
 
-class HEREnv(MiniGridEnv):
+class GoalEnv(MiniGridEnv):
     """
-    Entorno de navegación para HER (Hindsight Experience Replay).
+    Entorno de navegación para MultiGoal.
     ------
     - Grilla cuadrada size x size, sin objetos Goal visibles.
     - El goal es un double one-hot float32 en el espacio de observación:
         onehot(row_idx, stoch_rows) ⊕ onehot(class_val, stoch_classes)
       Se samplea uniformemente al inicio de cada episodio y se mantiene fijo.
-    - achieved_goal es un vector int32 de zeros (stoch_rows,) que sirve
-      de placeholder; run_train.py lo llena con el argmax del z estocástico
-      del agente a través de out['achieved_goal'].
     - Reward: siempre -1 por step. El reward 0 (goal alcanzado) lo asigna
-      run_train.py en las transiciones HER relabeladas.
+      driver.py al obtener el valor de z..
     - Terminación: solo por max_steps. La terminación por goal alcanzado
       la gestiona run_train.py truncando el buffer del episodio. 
 
@@ -52,10 +49,12 @@ class HEREnv(MiniGridEnv):
         self.agent_start_dir  = agent_start_dir
         self.onehot           = onehot
 
-        # goal y achieved_goal se inicializan en reset()
+        # goal y se inicializan en reset()
         self._goal_dim   = stoch_rows + stoch_classes
         self._goal       = np.zeros(self._goal_dim,  dtype=np.float32)
-        self._achieved   = np.zeros(stoch_rows,      dtype=np.int32)
+
+        # 8 acciones: 0-6 (MiniGrid) + 7 (nada)
+        self.action_space = spaces.Discrete(8)
 
         mission_space = MissionSpace(mission_func=self._gen_mission)
 
@@ -72,7 +71,7 @@ class HEREnv(MiniGridEnv):
             **kwargs,
         )
 
-        # Ampliar observation_space con goal y achieved_goal
+        # Ampliar observation_space con goal
         self.observation_space = spaces.Dict({
             **self.observation_space.spaces,
             'goal': spaces.Box(
@@ -80,11 +79,6 @@ class HEREnv(MiniGridEnv):
                 shape=(self._goal_dim,),
                 dtype=np.float32,
             ),
-            # 'achieved_goal': spaces.Box(
-            #     low=0, high=stoch_classes - 1,
-            #     shape=(stoch_rows,),
-            #     dtype=np.int32,
-            # ),
         })
 
         if self.onehot:
@@ -157,9 +151,7 @@ class HEREnv(MiniGridEnv):
         obs = super().gen_obs()
         if self.onehot:
             obs = self._get_onehot_obs(obs)
-        
         obs['goal']          = self._goal.copy()
-        # obs['achieved_goal'] = self._achieved.copy()
         return obs
 
     def reset(self, *, seed=None, options=None):
@@ -171,6 +163,15 @@ class HEREnv(MiniGridEnv):
         return obs, info
 
     def step(self, action):
+        if action == 7:
+            print("accion:", action)
+            self.step_count += 1
+            obs = self.gen_obs()
+            reward = -1.0
+            terminated = False
+            truncated = self.step_count >= self.max_steps
+            return obs, reward, terminated, truncated, {}
+        
         obs, reward, terminated, truncated, info = super().step(action)
         reward = -1.0
         terminated = False
@@ -178,8 +179,24 @@ class HEREnv(MiniGridEnv):
 
 
 if __name__ == '__main__':
+    # python -m cookie_env.envs.random_goal
     from minigrid.manual_control import ManualControl
-    env = HEREnv(size=9, stoch_rows=4, stoch_classes=4,
+    import pygame
+    
+    env = GoalEnv(size=9, stoch_rows=32, stoch_classes=16,
                  render_mode='human', onehot=False)
-    manual = ManualControl(env, seed=42)
+
+    class HERManualControl(ManualControl):
+        def __init__(self, env, seed=None):
+            super().__init__(env, seed=seed)
+
+        def key_handler(self, event):
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SPACE:
+                    self.step(7)
+                    return
+                
+            super().key_handler(event)
+
+    manual = HERManualControl(env, seed=42)
     manual.start()
