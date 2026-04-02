@@ -39,6 +39,7 @@ class GoalEnv(MiniGridEnv):
         agent_start_dir: int = 0,
         max_steps: int | None = None,
         onehot: bool = False,
+        fixed_row: bool = False,
         render_mode: str | None = None,
         **kwargs,
     ):
@@ -48,10 +49,14 @@ class GoalEnv(MiniGridEnv):
         self.agent_start_pos  = agent_start_pos
         self.agent_start_dir  = agent_start_dir
         self.onehot           = onehot
+        self.fixed_row        = fixed_row
 
         # goal y se inicializan en reset()
-        self._goal_dim   = stoch_rows + stoch_classes
-        self._goal       = np.zeros(self._goal_dim,  dtype=np.float32)
+        if self.fixed_row:
+            self._goal_dim = stoch_classes
+        else:
+            # Doble one-hot
+            self._goal_dim = stoch_rows + stoch_classes
 
         # 8 acciones: 0-6 (MiniGrid) + 7 (nada)
         self.action_space = spaces.Discrete(8)
@@ -80,7 +85,6 @@ class GoalEnv(MiniGridEnv):
                 dtype=np.float32,
             ),
         })
-
         if self.onehot:
             self._init_onehot_obs()
 
@@ -120,15 +124,18 @@ class GoalEnv(MiniGridEnv):
         """
         if rng is None:
             rng = np.random.default_rng()
-        row_idx   = int(rng.integers(self.stoch_rows))
+        
         class_val = int(rng.integers(self.stoch_classes))
-        row_oh = np.zeros(self.stoch_rows,    dtype=np.float32)
         cls_oh = np.zeros(self.stoch_classes, dtype=np.float32)
-        row_oh[row_idx]   = 1.0
         cls_oh[class_val] = 1.0
-        return np.concatenate([row_oh, cls_oh])
-
-    # ── MiniGrid overrides ────────────────────────────────────────────────
+        if self.fixed_row:
+            return cls_oh
+        else:
+            # Si es al azar, incluimos el one-hot de la fila seleccionada
+            row_idx = int(rng.integers(self.stoch_rows))
+            row_oh = np.zeros(self.stoch_rows, dtype=np.float32)
+            row_oh[row_idx] = 1.0
+            return np.concatenate([row_oh, cls_oh])
 
     @staticmethod
     def _gen_mission():
@@ -151,7 +158,7 @@ class GoalEnv(MiniGridEnv):
         obs = super().gen_obs()
         if self.onehot:
             obs = self._get_onehot_obs(obs)
-        obs['goal']          = self._goal.copy()
+        obs['goal'] = self._goal.copy()
         return obs
 
     def reset(self, *, seed=None, options=None):
@@ -164,7 +171,6 @@ class GoalEnv(MiniGridEnv):
 
     def step(self, action):
         if action == 7:
-            print("accion:", action)
             self.step_count += 1
             obs = self.gen_obs()
             reward = -1.0
@@ -183,8 +189,14 @@ if __name__ == '__main__':
     from minigrid.manual_control import ManualControl
     import pygame
     
-    env = GoalEnv(size=9, stoch_rows=32, stoch_classes=16,
-                 render_mode='human', onehot=False)
+    env = GoalEnv(
+        size=9, 
+        stoch_rows=32, 
+        stoch_classes=16,
+        render_mode='human', 
+        onehot=False,
+        fixed_row=True
+    )
 
     class HERManualControl(ManualControl):
         def __init__(self, env, seed=None):
@@ -198,5 +210,8 @@ if __name__ == '__main__':
                 
             super().key_handler(event)
 
-    manual = HERManualControl(env, seed=42)
+    manual = HERManualControl(
+        env, 
+        seed=42
+    )
     manual.start()
