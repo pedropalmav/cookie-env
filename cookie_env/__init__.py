@@ -57,3 +57,10 @@ register(
     entry_point="cookie_env.envs:GoalGrid",
     kwargs={"goal_pos": None},
 )
+# Episodic variant: stepping into lava ends the episode. See LavaGrid's docstring
+# on lava_penalty before training on it.
+register(
+    id="LavaGrid-v0",
+    entry_point="cookie_env.envs:LavaGrid",
+    kwargs={"goal_pos": None, "n_lava": 1},
+)
