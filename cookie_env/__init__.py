@@ -41,5 +41,19 @@ register(
 
 register(
     id="GoalEnv-v0",
-    entry_point="cookie_env.envs:GoalEnv-v0"
+    entry_point="cookie_env.envs:GoalEnv",
+)
+
+# Green-square navigation. The two ids differ only in whether the square is
+# pinned (`goal_pos` set) or resampled every episode (`goal_pos=None`).
+register(
+    id="GoalGrid-v0",
+    entry_point="cookie_env.envs:GoalGrid",
+    kwargs={"goal_pos": (8, 1), "agent_start_pos": (1, 8)},
+)
+
+register(
+    id="GoalGrid-random-v0",
+    entry_point="cookie_env.envs:GoalGrid",
+    kwargs={"goal_pos": None},
 )
