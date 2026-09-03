@@ -64,3 +64,11 @@ register(
     entry_point="cookie_env.envs:LavaGrid",
     kwargs={"goal_pos": None, "n_lava": 1},
 )
+
+# Same layout as LavaGrid, non-negative reward: +1 once for reaching the green
+# square, 0 per step, 0 on death. Episode return is a success flag in {0, 1}.
+register(
+    id="LavaGoalGrid-v0",
+    entry_point="cookie_env.envs:LavaGoalGrid",
+    kwargs={"goal_pos": None, "n_lava": 1},
+)
