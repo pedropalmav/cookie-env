@@ -23,7 +23,9 @@ uv run pytest tests/test_lava_grid.py     # one file
 uv run pytest tests/test_goal_grid.py -k test_gym_make   # one test
 uv run pytest -k "fixed"                  # one variant across the parametrized fixtures
 
-uv export --frozen --no-hashes --no-emit-project --format requirements-txt -o requirements.txt
+# regenerate requirements.txt — `--no-dev` is load-bearing: without it pytest and
+# its tree land in a file that is meant to describe the runtime install only
+uv export --frozen --no-dev --no-hashes --no-emit-project --format requirements-txt -o requirements.txt
 ```
 
 Every env module is runnable for manual play via `ManualControl` (opens a pygame window):
