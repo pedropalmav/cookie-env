@@ -43,9 +43,9 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gymnasium", specifier = ">=1.2.2" },
+    { name = "gymnasium", specifier = ">=1.2.1" },
     { name = "minigrid", specifier = ">=3.0.0" },
-    { name = "numpy", specifier = ">=2.0" },
+    { name = "numpy", specifier = ">=1.26.0" },
     { name = "pygame", specifier = ">=2.6.1" },
 ]
 
