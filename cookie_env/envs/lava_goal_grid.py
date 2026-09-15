@@ -83,6 +83,7 @@ def make_lava_goal_grid_env(
     n_lava: int = 1,
     lava_penalty: float = 0.0,
     goal_reward: float = 1.0,
+    lava_pos: list[tuple[int, int]] | None = None,
     **kwargs,
 ):
     env = LavaGoalGrid(
@@ -94,6 +95,7 @@ def make_lava_goal_grid_env(
         n_lava=n_lava,
         lava_penalty=lava_penalty,
         goal_reward=goal_reward,
+        lava_pos=lava_pos,
         **kwargs,
     )
     return RGBImgObsWrapper(env)

@@ -166,6 +166,12 @@ class TestInheritedBehaviour:
             env.reset(seed=seed)
             assert (3, 3) not in env.lava_positions
 
+    def test_lava_pos_pins_the_lava(self):
+        env = make_env(size=9, goal_pos=(7, 7), agent_start_pos=(1, 1), lava_pos=[(3, 3), (4, 5)])
+        for seed in range(5):
+            env.reset(seed=seed)
+            assert env.lava_positions == [(3, 3), (4, 5)]
+
     def test_random_goal_moves_across_resets(self):
         env = make_env(size=9, goal_pos=None)
         seen = set()
@@ -184,6 +190,11 @@ class TestFactoryAndRegistration:
         env.reset(seed=0)
         assert env.unwrapped.n_lava == 2
         assert env.unwrapped.goal_reward == 3.0
+
+    def test_factory_passes_lava_pos(self):
+        env = make_lava_goal_grid_env(size=9, goal_pos=(7, 7), agent_start_pos=(1, 1), lava_pos=[(3, 3)])
+        env.reset(seed=0)
+        assert env.unwrapped.lava_positions == [(3, 3)]
 
     def test_gym_make(self):
         env = gym.make("LavaGoalGrid-v0")

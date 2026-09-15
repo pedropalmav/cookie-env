@@ -66,6 +66,88 @@ class TestPlacementSafety:
             assert not env._on_lava()
 
 
+class TestPinnedLava:
+    """`lava_pos` is to lava what `goal_pos` is to the green square."""
+
+    def test_pinned_cells_are_used_verbatim(self):
+        env = LavaGrid(size=9, goal_pos=(7, 7), agent_start_pos=(1, 1), lava_pos=[(3, 3), (4, 5)])
+        env.reset(seed=0)
+        assert env.lava_positions == [(3, 3), (4, 5)]
+
+    def test_pinned_cells_survive_resets(self):
+        env = LavaGrid(size=9, goal_pos=(7, 7), agent_start_pos=(1, 1), lava_pos=[(3, 3)])
+        for seed in range(10):
+            env.reset(seed=seed)
+            assert env.lava_positions == [(3, 3)]
+
+    def test_n_lava_is_derived_from_the_pinned_list(self):
+        """Rather than trusted: a caller passing both can't make them disagree."""
+        env = LavaGrid(size=9, n_lava=7, goal_pos=(7, 7), agent_start_pos=(1, 1), lava_pos=[(3, 3), (4, 5)])
+        env.reset(seed=0)
+        assert env.n_lava == 2
+
+    def test_n_lava_follows_a_later_assignment(self):
+        env = LavaGrid(size=9, n_lava=1, goal_pos=(7, 7), agent_start_pos=(1, 1))
+        env.lava_pos = [(3, 3), (4, 5), (5, 3)]
+        env.reset(seed=0)
+        assert env.n_lava == 3
+
+    def test_pinned_lava_is_on_the_grid(self):
+        env = LavaGrid(size=9, goal_pos=(7, 7), agent_start_pos=(1, 1), lava_pos=[(3, 3), (4, 5)])
+        env.reset(seed=0)
+        for pos in env.lava_positions:
+            assert isinstance(env.grid.get(*pos), Lava)
+
+    def test_pinned_lava_still_terminates(self):
+        env = LavaGrid(size=9, goal_pos=(7, 7), agent_start_pos=(1, 1), lava_pos=[(3, 3)])
+        env.reset(seed=0)
+        _, _, terminated, _, info = walk_onto(env, (3, 3))
+        assert terminated is True
+        assert info["lava"] is True
+
+    def test_assigning_lava_pos_repins_on_reset(self):
+        """The documented way to pin a layout: assign, then reset."""
+        env = LavaGrid(size=9, goal_pos=(7, 7), agent_start_pos=(1, 1))
+        env.reset(seed=0)
+        env.lava_pos = [(5, 5)]
+        env.reset(seed=0)
+        assert env.lava_positions == [(5, 5)]
+
+    def test_random_agent_never_spawns_on_pinned_lava(self):
+        """Pinned lava goes down before the agent, so `place_agent` avoids it."""
+        env = LavaGrid(size=7, agent_start_pos=None, goal_pos=(5, 5), lava_pos=[(2, 2), (3, 3), (2, 3)])
+        for seed in range(40):
+            env.reset(seed=seed)
+            assert tuple(env.agent_pos) not in env.lava_positions
+            assert not env._on_lava()
+
+    def test_empty_list_means_no_lava(self):
+        env = LavaGrid(size=9, goal_pos=(7, 7), agent_start_pos=(1, 1), lava_pos=[])
+        env.reset(seed=0)
+        assert env.lava_positions == []
+        assert env.n_lava == 0
+
+
+class TestPinnedLavaConflicts:
+    """A pinned cell the layout cannot honour is a caller error, not a silent fix."""
+
+    def test_cell_on_the_goal_raises(self):
+        env = LavaGrid(size=9, goal_pos=(7, 7), agent_start_pos=(1, 1), lava_pos=[(7, 7)])
+        with pytest.raises(ValueError, match="collides with the goal"):
+            env.reset(seed=0)
+
+    def test_cell_on_the_agent_start_raises(self):
+        env = LavaGrid(size=9, goal_pos=(7, 7), agent_start_pos=(1, 1), lava_pos=[(1, 1)])
+        with pytest.raises(ValueError, match="collides with agent_start_pos"):
+            env.reset(seed=0)
+
+    @pytest.mark.parametrize("cell", [(0, 3), (3, 0), (8, 3), (3, 8)])
+    def test_cell_on_a_wall_raises(self, cell):
+        env = LavaGrid(size=9, goal_pos=(7, 7), agent_start_pos=(1, 1), lava_pos=[cell])
+        with pytest.raises(ValueError, match="outside the grid interior"):
+            env.reset(seed=0)
+
+
 class TestTermination:
     def test_stepping_into_lava_terminates(self):
         env = LavaGrid(size=9, n_lava=1, goal_pos=(7, 7))
@@ -140,6 +222,11 @@ class TestFactoryAndRegistration:
         env.reset(seed=0)
         assert env.unwrapped.n_lava == 2
         assert env.unwrapped.lava_penalty == 5.0
+
+    def test_factory_passes_lava_pos(self):
+        env = make_lava_grid_env(size=9, goal_pos=(7, 7), agent_start_pos=(1, 1), lava_pos=[(3, 3)])
+        env.reset(seed=0)
+        assert env.unwrapped.lava_positions == [(3, 3)]
 
     def test_gym_make(self):
         env = gym.make("LavaGrid-v0")

@@ -78,6 +78,13 @@ and register their variants as ids. Prefer extending this chain over cloning it.
   `goal_pos` is the *configured* value (may be `None`); `_goal_pos` is the concrete cell for the
   current episode; consumers read it through the `goal_position` property. Consumers that pin a
   layout assign to `goal_pos` and call `reset()`.
+- **`lava_pos` is the same knob one level up**, for `LavaGrid`'s lava: `None` resamples `n_lava`
+  cells every reset, a list of `(x, y)` pins them. Configured value `lava_pos`, concrete list
+  `_lava_positions`, accessor `lava_positions` — the same three-name shape as the goal. `n_lava` is
+  *derived* from the list when one is given, so the two can never disagree. This exists because a
+  consumer that reproduces a state (a goal-image generator, an analysis sweep) needs the whole
+  layout under its control; resampled lava makes the reproduced observation off-distribution and
+  the state unreachable.
 - **Reaching the goal does not terminate.** `GoalGrid.step` forces `terminated=False` and returns
   `0` instead of `-1` on the goal cell; episode end is signalled by `truncated` (time limit).
   Return is therefore a step-count proxy, not a success flag. `LavaGrid` re-derives `terminated`
@@ -93,8 +100,12 @@ and register their variants as ids. Prefer extending this chain over cloning it.
   the flag is set in `step` *after* `super().step()` so `_reward()` still sees the pre-step value.
   Episode return is then a success flag in `{0, goal_reward}`, not a step-count proxy — and the
   reward is sparse, so exploration has to come from the consumer.
-- **Ordering in `_gen_grid` is load-bearing.** `LavaGrid` calls `super()._gen_grid()` first so goal
-  and agent are placed before lava; `place_obj` then cannot land lava on either.
+- **Ordering in `_gen_grid` is load-bearing, and differs by variant.** Resampled lava goes down
+  *after* the goal and the agent (`LavaGrid._gen_grid` calls `super()._gen_grid()` first), because
+  `place_obj` needs to see their cells in order to skip them. Pinned lava goes down *before* the
+  agent instead, from the `_put_agent` hook: the cells are already chosen, so the only thing left
+  to protect is a randomly spawned agent, and `place_agent` skips occupied cells. A pinned cell on
+  the goal, on a configured `agent_start_pos`, or on a wall raises rather than being quietly moved.
 - **Missions carry state as text.** `GoalGrid` rewrites `obs["mission"]` on every `reset`/`step` to
   `"agent at (x,y) facing <dir>. goal at (x,y)"`. `random_mission()` samples strings from the same
   distribution for consumers that need synthetic missions — keep the two formats in sync.
