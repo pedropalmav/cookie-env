@@ -57,3 +57,11 @@ register(
     entry_point="cookie_env.envs:GoalGrid",
     kwargs={"goal_pos": None},
 )
+# Episodic variant: stepping into lava ends the episode. Non-negative reward:
+# +1 once for reaching the green square, 0 per step, 0 on death, so the episode
+# return is a success flag in {0, 1}.
+register(
+    id="LavaGrid-v0",
+    entry_point="cookie_env.envs:LavaGrid",
+    kwargs={"goal_pos": None, "n_lava": 1},
+)
