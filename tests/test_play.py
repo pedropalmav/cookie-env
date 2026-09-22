@@ -9,14 +9,13 @@ import pytest
 
 from cookie_env.envs.goal_grid import GoalGrid
 from cookie_env.envs.lava_grid import LavaGrid
-from cookie_env.envs.lava_goal_grid import LavaGoalGrid
 from cookie_env.utils.play import Player
 
 FORWARD = 2
 GOAL = (7, 7)
 
 
-def make_player(cls=LavaGoalGrid, **kwargs):
+def make_player(cls=LavaGrid, **kwargs):
     kwargs.setdefault("size", 9)
     kwargs.setdefault("goal_pos", GOAL)
     kwargs.setdefault("agent_start_pos", (1, 1))
@@ -117,15 +116,15 @@ class TestKeys:
 
 
 class TestWorksAcrossTheFamily:
-    @pytest.mark.parametrize("cls", [GoalGrid, LavaGrid, LavaGoalGrid])
+    @pytest.mark.parametrize("cls", [GoalGrid, LavaGrid])
     def test_goal_probe_works_without_goal_reached(self, cls):
-        """GoalGrid and LavaGrid have no `goal_reached`; the probe falls back."""
+        """GoalGrid has no `goal_reached`; the probe falls back to the current cell."""
         p = make_player(cls)
         assert p._goal_reached() is False
         walk_onto(p, GOAL)
         assert p._goal_reached() is True
 
-    @pytest.mark.parametrize("cls", [GoalGrid, LavaGrid, LavaGoalGrid])
+    @pytest.mark.parametrize("cls", [GoalGrid, LavaGrid])
     def test_steps_without_error(self, cls):
         p = make_player(cls)
         p._step(FORWARD)

@@ -32,8 +32,7 @@ Every env module is runnable for manual play via `ManualControl` (opens a pygame
 
 ```bash
 uv run python -m cookie_env.envs.goal_grid
-uv run python -m cookie_env.envs.lava_grid
-uv run python -m cookie_env.envs.lava_goal_grid   # uses the HUD viewer below
+uv run python -m cookie_env.envs.lava_grid        # uses the HUD viewer below
 uv run python -m cookie_env.envs.random_goal
 ```
 
@@ -43,7 +42,7 @@ until R, instead of printing to the console and resetting instantly. It matters 
 rewards are sparse and reaching the square is not terminal, so the console output alone does not
 say what happened. Build the env with `render_mode="rgb_array"` — the viewer owns the window — and
 call `play(env)`. It probes optional attributes (`goal_reached`, `lava_positions`) so it works for
-all three envs in the chain.
+both envs in the chain.
 
 Key bindings (from README): Left/Right = turn, Up = forward, Tab = pick up, Shift/PageDown = drop,
 Space = toggle, Enter = done. `GoalEnv` adds action `7` (idle) bound to Space via a subclassed
@@ -66,10 +65,9 @@ renderer class and a grid-generator class).
 designed to be driven by an external world model. This is where active work happens.
 
     GoalGrid            -1/step, 0 on the green square, never terminates
-      └─ LavaGrid       + lava; death is the only terminal
-           └─ LavaGoalGrid   0/step, +1 once on the square, 0 on death
+      └─ LavaGrid       + lava; death is the only terminal; 0/step, +1 once on the square, 0 on death
 
-All three share `make_*_env` helpers that wrap the env in `RGBImgObsWrapper` (pixel observations)
+Both share `make_*_env` helpers that wrap the env in `RGBImgObsWrapper` (pixel observations)
 and register their variants as ids. Prefer extending this chain over cloning it.
 
 ## Conventions that matter in the goal-navigation family
@@ -89,14 +87,14 @@ and register their variants as ids. Prefer extending this chain over cloning it.
   `0` instead of `-1` on the goal cell; episode end is signalled by `truncated` (time limit).
   Return is therefore a step-count proxy, not a success flag. `LavaGrid` re-derives `terminated`
   after calling `super().step()` — lava contact is the only terminal.
-- **Negative per-step reward makes termination attractive.** Read `LavaGrid`'s docstring before
-  tuning rewards: with -1/step, dying scores better than surviving to the time limit
-  (-136 vs -309 measured with a random policy at γ=0.997). `lava_penalty` is the knob, but it is
-  inert for consumers that overwrite `reward` with their own goal-conditioned signal.
-  `LavaGoalGrid` is the non-negative answer to this — 0/step, +1 on the square, 0 on death — and
-  inverts the comparison (0.31 dying vs 0.47 surviving under the same measurement).
+- **Negative per-step reward makes termination attractive**, which is why `LavaGrid` does not
+  inherit `GoalGrid`'s -1/step. With -1/step, dying scores better than surviving to the time limit
+  (-136 vs -309 measured with a random policy at γ=0.997); `LavaGrid`'s 0/step, +1 on the square,
+  0 on death inverts that (0.31 dying vs 0.47 surviving under the same measurement). Any terminal
+  added to a negative-reward env reopens the problem. `lava_penalty` (default 0) reintroduces it on
+  purpose, and is inert for consumers that overwrite `reward` with their own goal-conditioned signal.
 - **A positive goal reward must be paid once per episode.** Since reaching the square is not
-  terminal, `LavaGoalGrid` gates the bonus behind `_goal_paid` so a parked agent cannot farm it;
+  terminal, `LavaGrid` gates the bonus behind `_goal_paid` so a parked agent cannot farm it;
   the flag is set in `step` *after* `super().step()` so `_reward()` still sees the pre-step value.
   Episode return is then a success flag in `{0, goal_reward}`, not a step-count proxy — and the
   reward is sparse, so exploration has to come from the consumer.

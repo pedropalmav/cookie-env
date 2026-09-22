@@ -2,13 +2,13 @@
 
 MiniGrid's own `ManualControl` prints `step=N, reward=X` to the console and
 resets the moment an episode ends. That is a bad fit for these envs: the reward
-is sparse (`LavaGoalGrid` pays 0 on almost every step), reaching the green
+is sparse (`LavaGrid` pays 0 on almost every step), reaching the green
 square does not end the episode, and the instant reset hides *how* the episode
 ended. This viewer draws the state that actually matters next to the grid and
 waits for a keypress before starting the next episode.
 
 It reads everything through `env.unwrapped` and probes optional attributes, so
-it works for `GoalGrid`, `LavaGrid` and `LavaGoalGrid` alike, wrapped or not.
+it works for `GoalGrid` and `LavaGrid` alike, wrapped or not.
 The env must be built with `render_mode="rgb_array"` — this module owns the
 window, rather than letting MiniGrid open its own.
 """
@@ -123,8 +123,8 @@ class Player:
     def _goal_reached(self):
         """True once the square has been reached this episode.
 
-        `LavaGoalGrid` tracks this across the episode because arriving is not
-        terminal; the others only ever know where the agent is standing now.
+        `LavaGrid` tracks this across the episode because arriving is not
+        terminal; `GoalGrid` only ever knows where the agent is standing now.
         """
         reached = getattr(self.core, "goal_reached", None)
         if reached is not None:
